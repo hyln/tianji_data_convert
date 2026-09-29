@@ -1,0 +1,182 @@
+{
+  "schema_version": "tianji.shared_base_camera_intrinsics.v2",
+  "image_width": 224,
+  "image_height": 224,
+  "source_image_width": 1200,
+  "source_image_height": 1000,
+  "source_camera_matrix": [
+    [
+      835.6537274259291,
+      0.0,
+      601.8057573360916
+    ],
+    [
+      0.0,
+      835.4833679364748,
+      563.8496431244831
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "construction": "Common approximate source K from ROI-corrected arithmetic mean of three cameras. Each cropped output K subtracts its own crop origin; camera 6 cy therefore differs by +56 from cameras 7/8.",
+  "source_roi_offsets": {
+    "6": [
+      116,
+      0
+    ],
+    "7": [
+      116,
+      0
+    ],
+    "8": [
+      108,
+      0
+    ]
+  },
+  "approximate": true,
+  "user_requested_shared_intrinsics": true,
+  "undistortion_applied": {
+    "observation.images.head": false,
+    "observation.images.hik_camera_6": true,
+    "observation.images.hik_camera_7": true
+  },
+  "distortion_coefficients_used": true,
+  "source_calibration_caveat": "Driver camera_matrix values were reconstructed from a malformed 12-element 3x3 declaration; original per-camera matrices and provenance are preserved in the audit artifact.",
+  "wrist_undistortion": {
+    "enabled": true,
+    "cameras": [
+      "hik_camera_6",
+      "hik_camera_7"
+    ],
+    "model": "equidistant",
+    "coefficients": {
+      "hik_camera_6": [
+        -0.08821364711881852,
+        0.005537207097134088,
+        -0.004797075590481528,
+        0.0020391031610510874
+      ],
+      "hik_camera_7": [
+        -0.09014357906733653,
+        0.010675598137439962,
+        -0.011036925643517752,
+        0.00466163822895073
+      ]
+    },
+    "coefficient_interpretation": "Use the first four coefficients of each explicitly equidistant YAML; ignore its extra trailing zero.",
+    "supersampling_factor": 1,
+    "interpolation": "bilinear remap in source-resolution rectified coordinates, then direct crop; no resize",
+    "border_mode": "constant_zero",
+    "image_orientation": "unchanged",
+    "new_camera_matrix": "per_camera_intrinsics for each cropped view",
+    "output_distortion_model": "pinhole with zero distortion"
+  },
+  "shared_base_intrinsics_across": [
+    "observation.images.head",
+    "observation.images.hik_camera_6",
+    "observation.images.hik_camera_7"
+  ],
+  "image_preprocessing": {
+    "mode": "direct_crop",
+    "coordinate_space": "full_resolution_rectified_wrist_or_original_head",
+    "resize_before_crop": false,
+    "crop_rectangles": {
+      "hik_camera_6": [
+        488,
+        332,
+        224,
+        224
+      ],
+      "hik_camera_7": [
+        488,
+        388,
+        224,
+        224
+      ],
+      "head": [
+        488,
+        388,
+        224,
+        224
+      ]
+    },
+    "camera_6_offset_from_center_xy": [
+      0,
+      -56
+    ],
+    "offset_reference": "one quarter of 224-pixel crop height",
+    "index_convention": "zero-based x,y,width,height; exclusive right and bottom"
+  },
+  "per_camera_intrinsics": {
+    "observation.images.hik_camera_6": {
+      "image_width": 224,
+      "image_height": 224,
+      "camera_matrix": [
+        [
+          835.6537274259291,
+          0.0,
+          113.80575733609157
+        ],
+        [
+          0.0,
+          835.4833679364748,
+          231.84964312448312
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "undistorted": true
+    },
+    "observation.images.hik_camera_7": {
+      "image_width": 224,
+      "image_height": 224,
+      "camera_matrix": [
+        [
+          835.6537274259291,
+          0.0,
+          113.80575733609157
+        ],
+        [
+          0.0,
+          835.4833679364748,
+          175.84964312448312
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "undistorted": true
+    },
+    "observation.images.head": {
+      "image_width": 224,
+      "image_height": 224,
+      "camera_matrix": [
+        [
+          835.6537274259291,
+          0.0,
+          113.80575733609157
+        ],
+        [
+          0.0,
+          835.4833679364748,
+          175.84964312448312
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "undistorted": false
+    }
+  },
+  "coordinate_convention": "crop only: u_out=u_rectified-x0, v_out=v_rectified-y0; source pixels unchanged in scale"
+}

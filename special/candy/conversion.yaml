@@ -1,0 +1,16 @@
+# 相对根目录按本 YAML 所在目录解析；source/output 分别相对于各自根目录。
+source_root: "/media/seen-e-embodied/SANDISK ELE/tianji_record"
+output_root: "/media/seen-e-embodied/SANDISK ELE/tianji_record"
+
+conversion:
+  image_size: 256       # 三路相机统一尺寸：256 或 512
+  video_crf: 18         # H.264 CRF，越小质量越高
+  workers: 4            # 单个数据集内并行处理的序列数
+  keep_work: false      # 成功后保留中间分片；失败时始终保留
+  task: "<control mode> joint </control mode> tianji teleoperation"
+
+# 使用默认 legacy 模式：保留 Enable/Home/Inference 及首次 Enable 前 3 帧。
+# Y 标记不排除整条录制；原因说明文件不参与过滤。
+datasets:
+  - source: "20260923_full_but_one_candy_enforce_ok"
+    output: "20260923_full_but_one_candy_enforce_ok_lerobot_256"

@@ -1,0 +1,14 @@
+base_root: /media/seen-e-embodied/SANDISK ELE/tianji_record/Lerobot_duicha/feedback_effort_fk_224
+output_root: /media/seen-e-embodied/SANDISK ELE/tianji_record/Lerobot_duicha/feedback_effort_fk_5view224
+camera_intrinsics: shared_camera_intrinsics_5view224.json
+workers: 8
+video_crf: 18
+datasets:
+- base: 20260915_339eps_duichav2_clean_lerobot_224_state36
+  output: 20260915_339eps_duichav2_clean_lerobot_5view224_state36
+- base: 20260916_17_445eps_duichav2_clean_lerobot_224_state36
+  output: 20260916_17_445eps_duichav2_clean_lerobot_5view224_state36
+- base: 20260921_271eps_duichav2_raw_lerobot_224_state36
+  output: 20260921_271eps_duichav2_raw_lerobot_5view224_state36
+- base: 20260924_315eps_duichav2_lerobot_224_state36
+  output: 20260924_315eps_duichav2_lerobot_5view224_state36

@@ -1,0 +1,23 @@
+source_root: /media/seen-e-embodied/SANDISK ELE/tianji_record/duicha_rawdataset
+output_root: /media/seen-e-embodied/SANDISK ELE/tianji_record/Lerobot_duicha/feedback_effort_fk_5view224
+conversion:
+  conversion_mode: feedback_effort_labeled
+  image_size: 224
+  video_crf: 18
+  workers: 8
+  keep_work: false
+  task: <control mode> joint </control mode> tianji teleoperation
+  motion_control_root: /home/seen-e-embodied/tianji_infra_group/tianji_arm_teleop/src/mavrin/motion_control
+  annotation_index: /home/seen-e-embodied/Documents/Codex/2026-09-28/media-seen-e-embodied-sandisk-ele/outputs/duicha_episode_index.json
+  max_duration_s: 120
+  camera_intrinsics: shared_camera_intrinsics_5view224.json
+datasets:
+- source: 20260915_339eps_duichav2_clean
+  output: 20260915_339eps_duichav2_clean_lerobot_5view224_state36
+- source: 20260916_17_445eps_duichav2_clean
+  output: 20260916_17_445eps_duichav2_clean_lerobot_5view224_state36
+- source: 20260921_271eps_duichav2_raw
+  output: 20260921_271eps_duichav2_raw_lerobot_5view224_state36
+  source_kind: rollout_with_teleop_intervention
+- source: 20260924_315eps_duichav2
+  output: 20260924_315eps_duichav2_lerobot_5view224_state36

@@ -1,0 +1,104 @@
+{
+  "schema_version": "tianji.shared_camera_intrinsics.v1",
+  "shared_across": [
+    "observation.images.head",
+    "observation.images.hik_camera_6",
+    "observation.images.hik_camera_7"
+  ],
+  "image_width": 224,
+  "image_height": 224,
+  "camera_matrix": [
+    [
+      155.98869578617345,
+      0.0,
+      111.93040803607043
+    ],
+    [
+      0.0,
+      187.14827441777035,
+      125.91432005988422
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "source_image_width": 1200,
+  "source_image_height": 1000,
+  "source_camera_matrix": [
+    [
+      835.6537274259291,
+      0.0,
+      601.8057573360916
+    ],
+    [
+      0.0,
+      835.4833679364748,
+      563.8496431244831
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "coordinate_convention": "OpenCV resize pixel centers; u_out=(u_in+0.5)*sx-0.5, v_out=(v_in+0.5)*sy-0.5",
+  "resize_scale": [
+    0.18666666666666668,
+    0.224
+  ],
+  "construction": "Arithmetic mean of three individual K matrices after applying each current MFS ROI offset. All three cameras use this same approximate matrix.",
+  "source_roi_offsets": {
+    "6": [
+      116,
+      0
+    ],
+    "7": [
+      116,
+      0
+    ],
+    "8": [
+      108,
+      0
+    ]
+  },
+  "approximate": true,
+  "user_requested_shared_intrinsics": true,
+  "undistortion_applied": {
+    "observation.images.head": false,
+    "observation.images.hik_camera_6": true,
+    "observation.images.hik_camera_7": true
+  },
+  "distortion_coefficients_used": true,
+  "source_calibration_caveat": "Driver camera_matrix values were reconstructed from a malformed 12-element 3x3 declaration; original per-camera matrices and provenance are preserved in the audit artifact.",
+  "wrist_undistortion": {
+    "enabled": true,
+    "cameras": [
+      "hik_camera_6",
+      "hik_camera_7"
+    ],
+    "model": "equidistant",
+    "coefficients": {
+      "hik_camera_6": [
+        -0.08821364711881852,
+        0.005537207097134088,
+        -0.004797075590481528,
+        0.0020391031610510874
+      ],
+      "hik_camera_7": [
+        -0.09014357906733653,
+        0.010675598137439962,
+        -0.011036925643517752,
+        0.00466163822895073
+      ]
+    },
+    "coefficient_interpretation": "Use the first four coefficients of each explicitly equidistant YAML; ignore its extra trailing zero.",
+    "supersampling_factor": 2,
+    "interpolation": "linear remap to 448x448, then area resize to 224x224",
+    "border_mode": "constant_zero",
+    "image_orientation": "unchanged",
+    "new_camera_matrix": "shared camera_matrix",
+    "output_distortion_model": "pinhole with zero distortion"
+  }
+}
