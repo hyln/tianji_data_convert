@@ -1,5 +1,20 @@
 # 对插专项处理
 
+### Legacy 过滤 + 五视图 state36
+
+新批次使用 `duicha_feedback_effort_legacy.yaml`。`conversion_mode: feedback_effort_labeled`
+负责五视图/反馈关节/effort/FK 数据构建，独立的 `frame_filter: legacy` 使用原转换器的
+首次 Enable 前 3 帧及之后 Enable/Home/Inference 过滤；没有 Enable 时仍保留 Home/Inference。
+不添加 idle 尾帧或释放后的截止时间。图像、因果对齐、action16 均不变。
+task 为 `Insert the plug into the socket.`，输出到独立的 `feedback_effort_fk_5view224_legacy`。
+保留原标注索引和 120 秒上限。过滤设置参与分片缓存校验，旧全帧分片不会复用。
+未指定 `frame_filter` 时默认 `mode`，保持原模式行为。
+
+```bash
+python common/parallel_compressed_to_lerobot.py \
+  --config special/duicha/duicha_feedback_effort_legacy.yaml
+```
+
 以下命令从 `tianji_data_convert` 根目录运行。转换核心在 `common/`；本目录保存对插批次配置、标定资产和增量裁剪入口。
 
 ### 对插数据：五路 224 图像、实测关节、effort 和反馈 FK（2026-09-29）

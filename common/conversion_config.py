@@ -11,6 +11,7 @@ DEFAULTS = {
     "keep_work": False,
     "task": "<control mode> joint </control mode> tianji teleoperation",
     "conversion_mode": "legacy",
+    "frame_filter": "mode",
     "source_kind": "unspecified",
     "motion_control_root": None,
     "annotation_index": None,
@@ -95,6 +96,10 @@ def validate_jobs(jobs):
             raise ValueError("keep_work must be a YAML boolean")
         text(job.task, "task")
         text(job.repo_id, "repo_id")
+        if getattr(job, "frame_filter", "mode") not in ("mode", "legacy"):
+            raise ValueError("frame_filter must be mode or legacy")
+        if getattr(job, "frame_filter", "mode") == "legacy" and job.conversion_mode not in ("legacy", "feedback_effort_labeled"):
+            raise ValueError("legacy frame_filter requires legacy or feedback_effort_labeled schema")
         if getattr(job, "conversion_mode", "legacy") not in (
                 "legacy", "enable_only", "full_rollout_labeled", "feedback_effort_labeled"):
             raise ValueError("unknown conversion_mode")

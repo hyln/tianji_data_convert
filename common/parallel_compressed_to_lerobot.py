@@ -44,7 +44,8 @@ def complete_sessions(source: Path, session_prefix: str | None = None) -> list[P
 def shard_valid(path: Path, image_size: int = 256, *, task: str = DEFAULT_TASK,
                 video_crf: int = 18, session: Path | None = None,
                 conversion_mode: str = "legacy", source_kind: str = "unspecified",
-                empty_scene: bool = False, fk_library=None, fk_config=None, camera_intrinsics=None) -> bool:
+                empty_scene: bool = False, fk_library=None, fk_config=None, camera_intrinsics=None,
+                frame_filter: str = "mode") -> bool:
     try:
         info = json.loads((path / "meta" / "info.json").read_text())
         report = json.loads((path / "conversion_report.json").read_text())
@@ -77,6 +78,7 @@ def shard_valid(path: Path, image_size: int = 256, *, task: str = DEFAULT_TASK,
             and report.get("task") == task
             and report.get("video_crf") == video_crf
             and report.get("conversion_mode", "legacy") == conversion_mode
+            and report.get("frame_filter", "mode") == frame_filter
             and report.get("resampling_enabled") is False
             and info.get("fps", 0) > 0
             and info.get("fps") == report.get("fps")
@@ -107,6 +109,7 @@ def convert_shard(
     video_crf: int,
     image_size: int = 256,
     conversion_mode: str = "legacy",
+    frame_filter: str = "mode",
     source_kind: str = "unspecified", empty_scene: bool = False,
     fk_library=None, fk_config=None, camera_intrinsics=None,
 ) -> dict[str, object]:
@@ -161,6 +164,7 @@ def convert_shard(
                     conversion_mode=conversion_mode, source_kind=source_kind,
                     empty_scene=empty_scene, fk_library=fk_library, fk_config=fk_config)
     settings["camera_intrinsics"] = camera_intrinsics
+    settings["frame_filter"] = frame_filter
     if shard_valid(shard, image_size, **settings):
         return {
             "index": index, "session": session.name, "status": "resumed",
@@ -176,6 +180,7 @@ def convert_shard(
         "--video-crf", str(video_crf),
         "--image-size", str(image_size),
         "--conversion-mode", conversion_mode,
+        "--frame-filter", frame_filter,
     ]
     command.extend(["--source-kind", source_kind])
     if empty_scene:
@@ -274,6 +279,7 @@ def convert_dataset(args: argparse.Namespace) -> int:
                 task=args.task, video_crf=args.video_crf,
                 image_size=args.image_size,
                 conversion_mode=args.conversion_mode,
+                frame_filter=args.frame_filter,
                 source_kind=args.source_kind, empty_scene=session.resolve() in empty_sources,
                 fk_library=fk_library, fk_config=fk_config,
                 camera_intrinsics=args.camera_intrinsics,
@@ -318,6 +324,7 @@ def convert_dataset(args: argparse.Namespace) -> int:
         "workers": max(1, args.workers), "fps": fps,
         "task": args.task, "resampling_enabled": False,
         "conversion_mode": args.conversion_mode,
+        "frame_filter": args.frame_filter,
         "source_kind": args.source_kind,
         "fk_provenance": fk_provenance,
         "source_exclusions": excluded,
@@ -363,6 +370,7 @@ def main() -> int:
     parser.add_argument("--workers", type=int)
     parser.add_argument("--keep-work", action="store_true", default=None)
     parser.add_argument("--conversion-mode", choices=CONVERSION_MODES)
+    parser.add_argument("--frame-filter", choices=("mode", "legacy"))
     parser.add_argument("--session-prefix")
     parser.add_argument("--source-kind")
     parser.add_argument("--motion-control-root", type=Path)
@@ -386,6 +394,7 @@ def main() -> int:
                        "--workers", str(job.workers),
                        "--conversion-mode", getattr(job, "conversion_mode", "legacy")]
             command.extend(["--source-kind", job.source_kind])
+            command.extend(["--frame-filter", job.frame_filter])
             for name in ("motion_control_root", "annotation_index", "max_duration_s", "camera_intrinsics"):
                 value = getattr(job, name)
                 if value is not None:

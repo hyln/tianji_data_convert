@@ -175,7 +175,7 @@ def decode_camera_views(video_dir, stem, views, image_size):
 def convert(
     session: Path, output: Path, repo_id: str, task: str, video_crf: int,
     dataset: LeRobotDataset | None = None,
-    *, image_size: int = 256, conversion_mode: str = "legacy",
+    *, image_size: int = 256, conversion_mode: str = "legacy", frame_filter: str = "mode",
     fk_library: Path | None = None, fk_config: Path | None = None,
     source_kind: str = "unspecified", empty_scene: bool = False,
     camera_intrinsics: Path | None = None,
@@ -186,6 +186,8 @@ def convert(
         raise ValueError(f"conversion_mode must be one of {CONVERSION_MODES}")
     total_started = time.perf_counter()
     feedback_mode = conversion_mode == "feedback_effort_labeled"
+    if frame_filter not in ("mode", "legacy") or (frame_filter == "legacy" and conversion_mode not in ("legacy", "feedback_effort_labeled")):
+        raise ValueError("invalid frame_filter for conversion_mode")
     feedback_states = None
     processors = {}
     calibration = {}
@@ -315,7 +317,7 @@ def convert(
     for primary_index in primary_indices:
         t_ns = primary_times[primary_index]
         control_row = latest(control_rows, control_times, t_ns)
-        if feedback_mode:
+        if feedback_mode and frame_filter != "legacy":
             # Preserve all synchronized original head frames, including rollout,
             # intervention, idle/reset and explicitly retained empty scenes.
             keep_pre_enable, keep_active = False, True
@@ -437,6 +439,7 @@ def convert(
         "status": "converted",
         "conversion_revision": CONVERSION_REVISION,
         "conversion_mode": conversion_mode,
+        "frame_filter": frame_filter,
         "episode_has_y": episode_has_y,
         "source_kind": source_kind,
         "empty_scene": empty_scene,
@@ -477,6 +480,7 @@ def main() -> None:
     parser.add_argument("--video-crf", type=int, default=18,
                         help="H.264 CRF; lower is higher quality (default: 18)")
     parser.add_argument("--conversion-mode", choices=CONVERSION_MODES, default="legacy")
+    parser.add_argument("--frame-filter", choices=("mode", "legacy"), default="mode")
     parser.add_argument("--fk-library", type=Path)
     parser.add_argument("--fk-config", type=Path)
     parser.add_argument("--source-kind", default="unspecified")
@@ -505,6 +509,7 @@ def main() -> None:
                 session, output, args.repo_id, args.task,
                 args.video_crf, dataset, image_size=args.image_size,
                 conversion_mode=args.conversion_mode,
+                frame_filter=args.frame_filter,
                 fk_library=args.fk_library, fk_config=args.fk_config,
                 source_kind=args.source_kind, empty_scene=args.empty_scene,
                 camera_intrinsics=args.camera_intrinsics,
@@ -529,6 +534,7 @@ def main() -> None:
     summary = {
         "conversion_revision": CONVERSION_REVISION,
         "conversion_mode": args.conversion_mode,
+        "frame_filter": args.frame_filter,
         "image_size": args.image_size,
         "video_crf": args.video_crf,
         "task": args.task,
