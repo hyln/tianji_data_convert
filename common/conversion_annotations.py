@@ -49,11 +49,13 @@ def export_annotations(output, source, accepted, annotations, source_kind, fk_pr
             annotated["lerobot_frame_count"] = int(mask.sum())
             annotated["mapping_basis"] = "original_head_camera_frame_index; zero-based half-open spans"
             mapped.append(annotated)
+    state_names = json.loads((output / "meta/info.json").read_text())["features"]["observation.state"]["names"]
     result = {"schema_version": "tianji.feedback_effort.virtual_annotations.v1",
               "description": "One original recording per episode; insertion candidates remain editable annotations.",
               "source_kind": source_kind,
               "state_layout": {"angles": [0, 14], "effort": [14, 28], "feedback_fk_xyz": [28, 34],
-                               "grippers": [34, 36], "names": STATE_NAMES},
+                               "grippers": [34, 36], "names": state_names,
+                               **({"is_teleop": [36, 37]} if state_names == STATE_NAMES + ["is_teleop"] else {})},
               "fk_provenance": fk_provenance,
               "label_semantics": {
                   "is_rollout_batch": "User-confirmed rollout-with-intervention batch; unspecified batches are 0, not confirmed pure teleop.",

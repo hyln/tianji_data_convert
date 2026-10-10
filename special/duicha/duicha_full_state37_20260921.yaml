@@ -1,0 +1,20 @@
+source_root: /media/seen-e-embodied/SANDISK ELE/tianji_record/duicha_rawdataset
+output_root: /home/seen-e-embodied/tianji_infra_group/output/lerobot
+conversion:
+  conversion_mode: full_rollout_labeled
+  frame_filter: mode
+  exclude_y: true
+  exclude_sessions:
+    - tianji_20260921_190701  # User-confirmed empty recording
+  source_kind: unspecified
+  image_size: 224
+  video_crf: 18
+  workers: 4
+  keep_work: true
+  task: Insert the plug into the socket.
+  motion_control_root: /home/seen-e-embodied/tianji_infra_group/tianji_arm_teleop/src/mavrin/motion_control
+  camera_intrinsics: shared_camera_intrinsics_5view224.json
+datasets:
+  - source: 20260921_271eps_duichav2_raw
+    output: duichav2_full_5cam224_state37_20260921_267eps
+    repo_id: local/duichav2_full_5cam224_state37_20260921_267eps

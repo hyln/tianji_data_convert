@@ -20,7 +20,7 @@ import sys
 import time
 
 WORKER = Path(__file__).with_name("compressed_session_to_lerobot.py")
-CONVERSION_REVISION = "feedback_effort_five_view_v12"
+CONVERSION_REVISION = "feedback_effort_rollout37_v13"
 CONVERSION_MODES = ("legacy", "enable_only", "full_rollout_labeled", "feedback_effort_labeled")
 DEFAULT_TASK = "<control mode> joint </control mode> tianji teleoperation"
 
@@ -59,7 +59,7 @@ def shard_valid(path: Path, image_size: int = 256, *, task: str = DEFAULT_TASK,
                 return False
         elif report.get("camera_intrinsics_sha256") is not None:
             return False
-        if conversion_mode == "feedback_effort_labeled":
+        if conversion_mode in ("feedback_effort_labeled", "full_rollout_labeled"):
             from feedback_state import STATE_NAMES, extra_features, file_sha256, source_fingerprint
             if (report.get("source_kind") != source_kind
                     or report.get("empty_scene") != empty_scene
@@ -67,7 +67,7 @@ def shard_valid(path: Path, image_size: int = 256, *, task: str = DEFAULT_TASK,
                     or report.get("fk_library_sha256") != file_sha256(fk_library)
                     or report.get("fk_config_sha256") != file_sha256(fk_config)
                     or (session is not None and report.get("source_fingerprint") != source_fingerprint(session))
-                    or info.get("features", {}).get("observation.state", {}).get("names") != STATE_NAMES
+                    or info.get("features", {}).get("observation.state", {}).get("names") != STATE_NAMES + (["is_teleop"] if conversion_mode == "full_rollout_labeled" else [])
                     or any(key not in info.get("features", {}) for key in extra_features())):
                 return False
         return (
@@ -91,8 +91,8 @@ def shard_valid(path: Path, image_size: int = 256, *, task: str = DEFAULT_TASK,
             and (
                 "observation.state" not in info.get("features", {})
                 or info["features"]["observation.state"].get("shape")
-                == ([36] if conversion_mode == "feedback_effort_labeled" else
-                    [24] if conversion_mode == "full_rollout_labeled" else [22])
+                == ([37] if conversion_mode == "full_rollout_labeled" else
+                    [36] if conversion_mode == "feedback_effort_labeled" else [22])
             )
         )
     except (OSError, ValueError, TypeError, json.JSONDecodeError):
@@ -111,10 +111,14 @@ def convert_shard(
     conversion_mode: str = "legacy",
     frame_filter: str = "mode",
     source_kind: str = "unspecified", empty_scene: bool = False,
-    fk_library=None, fk_config=None, camera_intrinsics=None,
+    fk_library=None, fk_config=None, camera_intrinsics=None, exclude_y: bool = False, exclude_sessions=(),
 ) -> dict[str, object]:
     if image_size not in (224, 256, 512):
         raise ValueError("image_size must be 224, 256 or 512")
+    if session.name in exclude_sessions:
+        reason = "explicitly excluded by user (empty/invalid recording)"
+        log_path.write_text(reason + "\n")
+        return {"index": index, "session": session.name, "status": "skip_invalid", "reason": reason, "elapsed_s": 0.0}
     started = time.perf_counter()
     repo_id = f"local/tianji_rdc_shard_{index:06d}"
     # Empty camera indices cannot yield synchronized frames. Skip before
@@ -136,7 +140,7 @@ def convert_shard(
             "reason": reason, "elapsed_s": round(time.perf_counter() - started, 6),
         }
     marker_path = session / "topic_csv" / "rollout__error_marker.csv"
-    if conversion_mode == "enable_only" and marker_path.exists():
+    if (exclude_y or conversion_mode == "enable_only") and marker_path.exists():
         with marker_path.open(newline="") as stream:
             if next(csv.DictReader(stream), None) is not None:
                 reason = "session contains rollout Y error marker"
@@ -254,7 +258,7 @@ def convert_dataset(args: argparse.Namespace) -> int:
     if not sessions:
         raise ValueError("no sessions remain after source validity/annotation filters")
     fk_library = fk_config = fk_provenance = None
-    if args.conversion_mode == "feedback_effort_labeled":
+    if args.conversion_mode in ("feedback_effort_labeled", "full_rollout_labeled"):
         from feedback_state import build_fk_library, default_motion_control_root
         fk_library, fk_config, fk_provenance = build_fk_library(
             args.motion_control_root or default_motion_control_root(), work / "fk")
@@ -283,6 +287,8 @@ def convert_dataset(args: argparse.Namespace) -> int:
                 source_kind=args.source_kind, empty_scene=session.resolve() in empty_sources,
                 fk_library=fk_library, fk_config=fk_config,
                 camera_intrinsics=args.camera_intrinsics,
+                exclude_y=args.exclude_y,
+                exclude_sessions=args.exclude_sessions,
             )
             futures[future] = session
         for done, future in enumerate(as_completed(futures), 1):
@@ -328,6 +334,8 @@ def convert_dataset(args: argparse.Namespace) -> int:
         "source_kind": args.source_kind,
         "fk_provenance": fk_provenance,
         "source_exclusions": excluded,
+        "exclude_y": args.exclude_y,
+        "exclude_sessions": args.exclude_sessions,
         "max_duration_s": args.max_duration_s,
         "session_prefix": args.session_prefix,
         "video_crf": args.video_crf,
@@ -339,7 +347,7 @@ def convert_dataset(args: argparse.Namespace) -> int:
     (partial / "conversion_report.json").write_text(
         json.dumps(report, indent=2, ensure_ascii=False) + "\n"
     )
-    if args.conversion_mode == "feedback_effort_labeled":
+    if args.conversion_mode in ("feedback_effort_labeled", "full_rollout_labeled"):
         from conversion_annotations import export_annotations
         export_annotations(partial, source, accepted, annotations, args.source_kind, fk_provenance)
         shutil.copy2(fk_config, partial / "meta/fk_config.MvKDCfg")
@@ -372,6 +380,8 @@ def main() -> int:
     parser.add_argument("--conversion-mode", choices=CONVERSION_MODES)
     parser.add_argument("--frame-filter", choices=("mode", "legacy"))
     parser.add_argument("--session-prefix")
+    parser.add_argument("--exclude-y", action="store_true", default=None)
+    parser.add_argument("--exclude-session", dest="exclude_sessions", action="append")
     parser.add_argument("--source-kind")
     parser.add_argument("--motion-control-root", type=Path)
     parser.add_argument("--annotation-index", type=Path)
@@ -395,10 +405,14 @@ def main() -> int:
                        "--conversion-mode", getattr(job, "conversion_mode", "legacy")]
             command.extend(["--source-kind", job.source_kind])
             command.extend(["--frame-filter", job.frame_filter])
-            for name in ("motion_control_root", "annotation_index", "max_duration_s", "camera_intrinsics"):
+            for name in ("motion_control_root", "annotation_index", "max_duration_s", "camera_intrinsics", "session_prefix"):
                 value = getattr(job, name)
                 if value is not None:
                     command.extend(["--" + name.replace("_", "-"), str(value)])
+            for session_name in job.exclude_sessions:
+                command.extend(["--exclude-session", session_name])
+            if job.exclude_y:
+                command.append("--exclude-y")
             if job.keep_work:
                 command.append("--keep-work")
             print(f"[start] {job.output.name} log={log}", flush=True)

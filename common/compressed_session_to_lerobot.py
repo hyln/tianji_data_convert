@@ -33,7 +33,7 @@ ROLLOUT_ERROR_STEM = "rollout__error_marker"
 HOME_ARM_STATES = {4, 7, 8}  # HOMING_JOINT, HOMING_IK, HOME_WAIT
 INFERENCE_ARM_STATE = 3
 PRE_ENABLE_FRAMES = 3
-CONVERSION_REVISION = "feedback_effort_five_view_v12"
+CONVERSION_REVISION = "feedback_effort_rollout37_v13"
 CONVERSION_MODES = ("legacy", "enable_only", "full_rollout_labeled", "feedback_effort_labeled")
 JOINT_NAMES = [f"joint_L{i}" for i in range(1, 8)] + [f"joint_R{i}" for i in range(1, 8)]
 
@@ -185,7 +185,7 @@ def convert(
     if conversion_mode not in CONVERSION_MODES:
         raise ValueError(f"conversion_mode must be one of {CONVERSION_MODES}")
     total_started = time.perf_counter()
-    feedback_mode = conversion_mode == "feedback_effort_labeled"
+    feedback_mode = conversion_mode in ("feedback_effort_labeled", "full_rollout_labeled")
     if frame_filter not in ("mode", "legacy") or (frame_filter == "legacy" and conversion_mode not in ("legacy", "feedback_effort_labeled")):
         raise ValueError("invalid frame_filter for conversion_mode")
     feedback_states = None
@@ -280,12 +280,10 @@ def convert(
                      ["gripper_L_cmd", "gripper_R_cmd"],
         },
     }
-    if conversion_mode == "full_rollout_labeled":
-        features["observation.state"]["shape"] = (24,)
-        features["observation.state"]["names"] += ["is_teleop", "neg_rollout"]
     if feedback_mode:
         from feedback_state import STATE_NAMES, extra_features, frame_labels
-        features["observation.state"] = {"dtype": "float32", "shape": (36,), "names": STATE_NAMES}
+        state_names = STATE_NAMES + (["is_teleop"] if conversion_mode == "full_rollout_labeled" else [])
+        features["observation.state"] = {"dtype": "float32", "shape": (len(state_names),), "names": state_names}
         features.update(extra_features())
     for name in view_to_source:
         features[f"observation.images.{name}"] = {
@@ -317,7 +315,7 @@ def convert(
     for primary_index in primary_indices:
         t_ns = primary_times[primary_index]
         control_row = latest(control_rows, control_times, t_ns)
-        if feedback_mode and frame_filter != "legacy":
+        if conversion_mode == "feedback_effort_labeled" and frame_filter != "legacy":
             # Preserve all synchronized original head frames, including rollout,
             # intervention, idle/reset and explicitly retained empty scenes.
             keep_pre_enable, keep_active = False, True
@@ -365,7 +363,6 @@ def convert(
                 state,
                 np.asarray([
                     float(teleop_enabled(control_row)),
-                    float(not episode_has_y),
                 ], dtype=np.float32),
             ])
         frame = {"observation.state": state, "action": commanded, "task": task}
@@ -443,7 +440,8 @@ def convert(
         "episode_has_y": episode_has_y,
         "source_kind": source_kind,
         "empty_scene": empty_scene,
-        "state_schema": "feedback_angles_effort_fk_grippers_36" if feedback_mode else "legacy_cmd_fk",
+        "state_schema": ("feedback_angles_effort_fk_grippers_37_teleop" if conversion_mode == "full_rollout_labeled"
+                         else "feedback_angles_effort_fk_grippers_36" if feedback_mode else "legacy_cmd_fk"),
         "eef_csv_used": not feedback_mode,
         "undistorted_cameras": sorted(name for name, processor in processors.items() if processor.undistorted),
         "processed_cameras": sorted(processors),
@@ -552,7 +550,7 @@ def main() -> None:
         "total_frames": sum(int(item.get("frames", 0)) for item in report),
         "sessions": report,
     }
-    if args.conversion_mode == "feedback_effort_labeled":
+    if args.conversion_mode in ("feedback_effort_labeled", "full_rollout_labeled"):
         from feedback_state import file_sha256, source_fingerprint
         summary["fk_library_sha256"] = file_sha256(args.fk_library)
         summary["fk_config_sha256"] = file_sha256(args.fk_config)

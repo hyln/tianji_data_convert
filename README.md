@@ -15,6 +15,17 @@ tianji_data_convert/
 `/home/seen-e-embodied/miniconda3/envs/lerobot/bin/python`。
 不新增统一封装入口，直接运行对应脚本即可。
 
+重建独立 CPU 转换环境（不修改 OpenPI 推理环境）：
+
+```bash
+env -u PYTHONPATH conda env create -f environment.yml
+conda activate lerobot
+env -u PYTHONPATH python -m pip check
+```
+
+固定 LeRobot 0.4.4、PyTorch 2.7.1 CPU、TorchCodec 0.5；系统还需 FFmpeg。
+如果当前 shell 已 source ROS，使用 `env -u PYTHONPATH python ...` 运行转换，避免 ROS Python 包污染。
+
 ## 常用入口
 
 通用 MP4+CSV → LeRobot：
@@ -27,6 +38,10 @@ python common/parallel_compressed_to_lerobot.py SOURCE_ROOT OUTPUT_DATASET \
 按任务配置运行：
 
 ```bash
+# 对插 rollout：五路 224 图像、反馈/effort/FK + is_teleop State[37]
+python common/parallel_compressed_to_lerobot.py \
+  --config special/duicha/duicha_rollout_state37_20261001.yaml
+
 # 对插：五路 224 图像、反馈/effort/FK State[36]
 python common/parallel_compressed_to_lerobot.py \
   --config special/duicha/duicha_feedback_effort.yaml

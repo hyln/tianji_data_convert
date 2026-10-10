@@ -17,6 +17,9 @@ DEFAULTS = {
     "annotation_index": None,
     "camera_intrinsics": None,
     "max_duration_s": None,
+    "session_prefix": None,
+    "exclude_y": False,
+    "exclude_sessions": [],
 }
 
 
@@ -92,8 +95,13 @@ def validate_jobs(jobs):
             raise ValueError("video_crf must be an integer in [0, 51]")
         if type(job.workers) is not int or job.workers < 1:
             raise ValueError("workers must be a positive integer")
+        if type(getattr(job, "exclude_y", False)) is not bool:
+            raise ValueError("exclude_y must be a YAML boolean")
         if type(job.keep_work) is not bool:
             raise ValueError("keep_work must be a YAML boolean")
+        exclusions = getattr(job, "exclude_sessions", [])
+        if not isinstance(exclusions, list) or any(not isinstance(v, str) or not v or Path(v).name != v for v in exclusions):
+            raise ValueError("exclude_sessions must be a list of session directory names")
         text(job.task, "task")
         text(job.repo_id, "repo_id")
         if getattr(job, "frame_filter", "mode") not in ("mode", "legacy"):
@@ -106,6 +114,8 @@ def validate_jobs(jobs):
         if getattr(job, "source_kind", "unspecified") not in (
                 "unspecified", "rollout_with_teleop_intervention"):
             raise ValueError("unknown source_kind")
+        if getattr(job, "session_prefix", None) is not None:
+            text(job.session_prefix, "session_prefix")
         duration = getattr(job, "max_duration_s", None)
         if duration is not None and (type(duration) not in (int, float) or not 0 < duration < float("inf")):
             raise ValueError("max_duration_s must be a finite positive number")
